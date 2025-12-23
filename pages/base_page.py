@@ -26,9 +26,12 @@ class BasePage:
     def open(self, file_path):
         # Для локального запуска используем file:// протокол
         full_path = os.path.abspath(file_path)
-        # Убедимся, что путь правильный для разных ОС
+        
+        # Исправленная версия без обратного слэша в f-строке
         if os.name == 'nt':  # Windows
-            file_url = f"file:///{full_path.replace('\\', '/')}"
+            # Сначала заменяем обратные слэши на прямые
+            normalized_path = full_path.replace('\\', '/')
+            file_url = f"file:///{normalized_path}"
         else:  # Linux/macOS
             file_url = f"file://{full_path}"
         
