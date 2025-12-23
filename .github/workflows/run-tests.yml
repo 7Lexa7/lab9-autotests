@@ -31,27 +31,26 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
           
-    # Шаг 4: Устанавливаем зависимости Python
+    # Шаг 4: Устанавливаем зависимости Python (БЕЗ webdriver-manager!)
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        # Явная установка всех зависимостей
-        pip install pytest==7.4.3 selenium==4.15.2 webdriver-manager==4.0.1 pytest-html==4.1.0
+        # Устанавливаем только необходимые пакеты
+        pip install pytest==7.4.3 selenium==4.15.2 pytest-html==4.1.0
         
-    # Шаг 5: Проверяем установку (диагностика)
+    # Шаг 5: Проверяем установку
     - name: Verify installations
       run: |
         python -c "import pytest; print(f'✅ Pytest version: {pytest.__version__}')"
         python -c "import selenium; print(f'✅ Selenium version: {selenium.__version__}')"
-        python -c "import pytest_html; print('✅ pytest-html доступен')"
         echo "Python путь: $(which python)"
-        echo "Pytest путь: $(which pytest)"
+        echo "CHROMEWEBDRIVER переменная: $CHROMEWEBDRIVER"
         
-    # Шаг 6: Устанавливаем Chrome браузер и ChromeDriver
-    - name: Install Chrome and ChromeDriver
+    # Шаг 6: Устанавливаем Chrome браузер
+    - name: Install Chrome and check ChromeDriver
       run: |
         sudo apt-get update
-        sudo apt-get install -y wget unzip
+        sudo apt-get install -y wget
         
         # Устанавливаем Chrome
         wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
@@ -62,13 +61,24 @@ jobs:
         # Проверяем версию Chrome
         google-chrome --version
         
-        # Устанавливаем ChromeDriver через webdriver-manager (будет использоваться в тестах)
-        python -c "from webdriver_manager.chrome import ChromeDriverManager; print(f'ChromeDriver путь: {ChromeDriverManager().install()}')"
+        # Проверяем, установлен ли ChromeDriver системой
+        # В GitHub Actions он обычно уже установлен
+        if [ -f "/usr/bin/chromedriver" ]; then
+          echo "✅ Системный ChromeDriver найден в /usr/bin/chromedriver"
+          /usr/bin/chromedriver --version
+        elif [ -f "/usr/local/bin/chromedriver" ]; then
+          echo "✅ ChromeDriver найден в /usr/local/bin/chromedriver"
+          /usr/local/bin/chromedriver --version
+        else
+          echo "⚠️ ChromeDriver не найден в стандартных путях"
+          echo "Проверяем переменную CHROMEWEBDRIVER: $CHROMEWEBDRIVER"
+          ls -la $CHROMEWEBDRIVER 2>/dev/null || echo "Директория CHROMEWEBDRIVER не найдена"
+        fi
         
     # Шаг 7: Запускаем тесты
     - name: Run tests with pytest
       run: |
-        # Явно указываем путь и создаем отчет
+        # Запускаем тесты с явным указанием пути
         python -m pytest tests/ -v --html=report.html --self-contained-html
         
     # Шаг 8: Загружаем отчет о тестировании как артефакт
@@ -82,4 +92,4 @@ jobs:
     # Шаг 9: Уведомление об успешном завершении
     - name: Success notification
       if: success()
-      run: echo "Все тесты успешно выполнены!"
+      run: echo "✅ Все тесты успешно выполнены! Отчет доступен в артефактах."
