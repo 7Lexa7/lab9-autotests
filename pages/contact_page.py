@@ -1,9 +1,9 @@
-from selenium.webdriver.common.by import By
+from selenium.webdriver.common.by import By  # Этот импорт уже есть
 from pages.base_page import BasePage
 
 class ContactPage(BasePage):
     def __init__(self, driver=None):
-        super().__init__(driver)
+        super().__init__(driver)  # Это передаст драйвер в BasePage
         self.name_input = (By.ID, "name")
         self.email_input = (By.ID, "email")
         self.message_input = (By.ID, "message")
